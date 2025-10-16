@@ -1,5 +1,6 @@
 use backend_rust::models::*;
 use backend_rust::database::Database;
+use backend_rust::repositories::CategoriaRepository;
 use chrono::Utc;
 use tracing::{info, error, Level};
 use tracing_subscriber;
@@ -26,18 +27,54 @@ async fn main() -> anyhow::Result<()> {
         Ok(db) => {
             info!("✅ Conexión a base de datos establecida: {}", database_url);
             
-            // Verificar que podemos hacer una consulta simple
-            let result = sqlx::query("SELECT COUNT(*) as count FROM categorias")
-                .fetch_one(db.pool())
-                .await;
-                
-            match result {
-                Ok(row) => {
-                    let count: i64 = row.get("count");
-                    info!("📊 Categorías en base de datos: {}", count);
+            // Crear repositorio de categorías
+            let categoria_repo = CategoriaRepository::new(db.pool().clone());
+            
+            // Probar el repositorio creando algunas categorías de ejemplo
+            info!("🧪 Probando repositorio de categorías...");
+            
+            // Crear categoría de gasto
+            let categoria_alojamiento = CreateCategoria {
+                nombre: "Alojamiento".to_string(),
+                tipo: TipoCategoria::Gasto,
+                color: "#FF5733".to_string(),
+            };
+            
+            match categoria_repo.create(categoria_alojamiento).await {
+                Ok(categoria) => {
+                    info!("✅ Categoría creada: {} ({})", categoria.nombre, categoria.id);
                 }
                 Err(e) => {
-                    error!("❌ Error al consultar categorías: {}", e);
+                    error!("❌ Error creando categoría: {}", e);
+                }
+            }
+            
+            // Crear categoría de ingreso
+            let categoria_inscripciones = CreateCategoria {
+                nombre: "Inscripciones".to_string(),
+                tipo: TipoCategoria::Ingreso,
+                color: "#28A745".to_string(),
+            };
+            
+            match categoria_repo.create(categoria_inscripciones).await {
+                Ok(categoria) => {
+                    info!("✅ Categoría creada: {} ({})", categoria.nombre, categoria.id);
+                }
+                Err(e) => {
+                    error!("❌ Error creando categoría: {}", e);
+                }
+            }
+            
+            // Listar todas las categorías
+            match categoria_repo.get_all().await {
+                Ok(categorias) => {
+                    info!("📋 Total de categorías: {}", categorias.len());
+                    for categoria in categorias {
+                        info!("  - {} ({}) - {}", categoria.nombre, categoria.tipo, categoria.color);
+                    }
+                }
+                Err(e) => {
+                    error!("❌ Error listando categorías: {}", e);
                 }
             }
         }

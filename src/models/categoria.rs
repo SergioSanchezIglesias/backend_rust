@@ -1,14 +1,16 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use validator::Validate;
+use sqlx::FromRow;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
 pub enum TipoCategoria {
     Ingreso,
     Gasto,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate, FromRow)]
 pub struct Categoria {
     pub id: Uuid,
 
@@ -39,6 +41,16 @@ impl Categoria {
             nombre: data.nombre,
             tipo: data.tipo,
             color: data.color,
+        }
+    }
+}
+
+// Implementar Display para facilitar la conversión a string
+impl std::fmt::Display for TipoCategoria {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TipoCategoria::Ingreso => write!(f, "Ingreso"),
+            TipoCategoria::Gasto => write!(f, "Gasto"),
         }
     }
 }
