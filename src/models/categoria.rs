@@ -11,12 +11,12 @@ pub enum TipoCategoria {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct Categoria {
     pub id: Uuid,
-    
+
     #[validate(length(min = 1, max = 100))]
     pub nombre: String,
-    
+
     pub tipo: TipoCategoria,
-    
+
     #[validate(length(min = 7, max = 7))] // Formato #RRGGBB
     pub color: String,
 }
@@ -25,9 +25,9 @@ pub struct Categoria {
 pub struct CreateCategoria {
     #[validate(length(min = 1, max = 100))]
     pub nombre: String,
-    
+
     pub tipo: TipoCategoria,
-    
+
     #[validate(length(min = 7, max = 7))]
     pub color: String,
 }

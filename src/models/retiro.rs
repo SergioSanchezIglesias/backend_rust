@@ -13,22 +13,22 @@ pub enum EstadoRetiro {
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct Retiro {
     pub id: Uuid,
-    
+
     #[validate(length(min = 1, max = 200))]
     pub nombre: String,
-    
+
     #[validate(length(max = 500))]
     pub descripcion: Option<String>,
-    
+
     pub fecha_inicio: DateTime<Utc>,
     pub fecha_fin: DateTime<Utc>,
-    
+
     #[validate(length(max = 200))]
     pub ubicacion: Option<String>,
-    
+
     #[validate(range(min = 1))]
     pub numero_participantes: i32,
-    
+
     pub estado: EstadoRetiro,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -38,16 +38,16 @@ pub struct Retiro {
 pub struct CreateRetiro {
     #[validate(length(min = 1, max = 200))]
     pub nombre: String,
-    
+
     #[validate(length(max = 500))]
     pub descripcion: Option<String>,
-    
+
     pub fecha_inicio: DateTime<Utc>,
     pub fecha_fin: DateTime<Utc>,
-    
+
     #[validate(length(max = 200))]
     pub ubicacion: Option<String>,
-    
+
     #[validate(range(min = 1))]
     pub numero_participantes: i32,
 }

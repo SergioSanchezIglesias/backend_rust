@@ -1,5 +1,5 @@
-use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use crate::Result;
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub struct Database {
     pool: SqlitePool,

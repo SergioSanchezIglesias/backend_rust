@@ -14,15 +14,15 @@ pub struct Transaccion {
     pub id: Uuid,
     pub retiro_id: Uuid,
     pub categoria_id: Uuid,
-    
+
     pub tipo: TipoTransaccion,
-    
+
     #[validate(range(min = 0.01))]
     pub monto: f64,
-    
+
     #[validate(length(min = 1, max = 300))]
     pub descripcion: String,
-    
+
     pub fecha: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -32,15 +32,15 @@ pub struct Transaccion {
 pub struct CreateTransaccion {
     pub retiro_id: Uuid,
     pub categoria_id: Uuid,
-    
+
     pub tipo: TipoTransaccion,
-    
+
     #[validate(range(min = 0.01))]
     pub monto: f64,
-    
+
     #[validate(length(min = 1, max = 300))]
     pub descripcion: String,
-    
+
     pub fecha: DateTime<Utc>,
 }
 

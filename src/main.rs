@@ -1,7 +1,10 @@
 use backend_rust::models::*;
+use backend_rust::database::Database;
 use chrono::Utc;
-use tracing::{info, Level};
+use tracing::{info, error, Level};
 use tracing_subscriber;
+use std::env;
+use sqlx::Row;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -14,6 +17,35 @@ async fn main() -> anyhow::Result<()> {
     dotenvy::dotenv().ok();
 
     info!("🚀 Iniciando Sistema de Gestión Financiera para Retiros");
+
+    // Conectar a la base de datos
+    let database_url = env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "sqlite:./retiros.db".to_string());
+    
+    match Database::new(&database_url).await {
+        Ok(db) => {
+            info!("✅ Conexión a base de datos establecida: {}", database_url);
+            
+            // Verificar que podemos hacer una consulta simple
+            let result = sqlx::query("SELECT COUNT(*) as count FROM categorias")
+                .fetch_one(db.pool())
+                .await;
+                
+            match result {
+                Ok(row) => {
+                    let count: i64 = row.get("count");
+                    info!("📊 Categorías en base de datos: {}", count);
+                }
+                Err(e) => {
+                    error!("❌ Error al consultar categorías: {}", e);
+                }
+            }
+        }
+        Err(e) => {
+            error!("❌ Error conectando a base de datos: {}", e);
+            return Err(e.into());
+        }
+    }
 
     // Ejemplo de creación de un retiro
     let retiro_data = CreateRetiro {
