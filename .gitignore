@@ -1,1 +1,28 @@
-/target
+# Rust
+/target/
+Cargo.lock
+
+# Base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Variables de entorno
+.env.local
+.env.production
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
