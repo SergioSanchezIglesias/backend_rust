@@ -1,8 +1,8 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use clap::{Args, Subcommand};
 use colored::*;
 use uuid::Uuid;
 use validator::Validate;
-use chrono::{DateTime, Utc, NaiveDateTime};
 
 use crate::database::Database;
 use crate::models::{CreateRetiro, EstadoRetiro};
@@ -32,23 +32,23 @@ pub struct CrearRetiroArgs {
     /// Nombre del retiro
     #[arg(short, long)]
     pub nombre: String,
-    
+
     /// Descripción del retiro
     #[arg(short, long)]
     pub descripcion: Option<String>,
-    
+
     /// Fecha de inicio (YYYY-MM-DD HH:MM:SS)
     #[arg(long)]
     pub fecha_inicio: String,
-    
+
     /// Fecha de fin (YYYY-MM-DD HH:MM:SS)
     #[arg(long)]
     pub fecha_fin: String,
-    
+
     /// Ubicación del retiro
     #[arg(short, long)]
     pub ubicacion: Option<String>,
-    
+
     /// Número de participantes
     #[arg(short, long)]
     pub participantes: i32,
@@ -71,27 +71,27 @@ pub struct MostrarRetiroArgs {
 pub struct ActualizarRetiroArgs {
     /// ID del retiro a actualizar
     pub id: String,
-    
+
     /// Nuevo nombre del retiro
     #[arg(short, long)]
     pub nombre: Option<String>,
-    
+
     /// Nueva descripción del retiro
     #[arg(short, long)]
     pub descripcion: Option<String>,
-    
+
     /// Nueva fecha de inicio (YYYY-MM-DD HH:MM:SS)
     #[arg(long)]
     pub fecha_inicio: Option<String>,
-    
+
     /// Nueva fecha de fin (YYYY-MM-DD HH:MM:SS)
     #[arg(long)]
     pub fecha_fin: Option<String>,
-    
+
     /// Nueva ubicación del retiro
     #[arg(short, long)]
     pub ubicacion: Option<String>,
-    
+
     /// Nuevo número de participantes
     #[arg(short, long)]
     pub participantes: Option<i32>,
@@ -101,7 +101,7 @@ pub struct ActualizarRetiroArgs {
 pub struct EstadoRetiroArgs {
     /// ID del retiro
     pub id: String,
-    
+
     /// Nuevo estado del retiro
     #[arg(value_enum)]
     pub estado: CliEstadoRetiro,
@@ -111,7 +111,7 @@ pub struct EstadoRetiroArgs {
 pub struct EliminarRetiroArgs {
     /// ID del retiro a eliminar
     pub id: String,
-    
+
     /// Confirmar eliminación sin preguntar
     #[arg(short, long)]
     pub force: bool,
@@ -142,9 +142,9 @@ impl From<CliEstadoRetiro> for EstadoRetiro {
 
 pub async fn handle_retiro_command(command: RetiroCommands) -> Result<()> {
     // Conectar a la base de datos
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:./retiros.db".to_string());
-    
+    let database_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./retiros.db".to_string());
+
     let db = Database::new(&database_url).await?;
     let repo = RetiroRepository::new(db.pool().clone());
 
@@ -164,14 +164,17 @@ fn parse_datetime(date_str: &str) -> Result<DateTime<Utc>> {
     if let Ok(naive_dt) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S") {
         return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
     }
-    
+
     // Intentar parsear solo fecha "YYYY-MM-DD" (asumiendo 00:00:00)
     if let Ok(naive_date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
         let naive_dt = naive_date.and_hms_opt(0, 0, 0).unwrap();
         return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
     }
-    
-    Err(AppError::Validation(format!("Formato de fecha inválido: {}. Use YYYY-MM-DD o YYYY-MM-DD HH:MM:SS", date_str)))
+
+    Err(AppError::Validation(format!(
+        "Formato de fecha inválido: {}. Use YYYY-MM-DD o YYYY-MM-DD HH:MM:SS",
+        date_str
+    )))
 }
 
 async fn crear_retiro(repo: RetiroRepository, args: CrearRetiroArgs) -> Result<()> {
@@ -202,10 +205,30 @@ async fn crear_retiro(repo: RetiroRepository, args: CrearRetiroArgs) -> Result<(
             println!("📋 {}", "Detalles:".bold());
             println!("   ID: {}", retiro.id.to_string().bright_blue());
             println!("   Nombre: {}", retiro.nombre.bright_white());
-            println!("   Estado: {}", format!("{}", retiro.estado).bright_yellow());
-            println!("   Participantes: {}", retiro.numero_participantes.to_string().bright_green());
-            println!("   Fecha inicio: {}", retiro.fecha_inicio.format("%Y-%m-%d %H:%M").to_string().bright_cyan());
-            println!("   Fecha fin: {}", retiro.fecha_fin.format("%Y-%m-%d %H:%M").to_string().bright_cyan());
+            println!(
+                "   Estado: {}",
+                format!("{}", retiro.estado).bright_yellow()
+            );
+            println!(
+                "   Participantes: {}",
+                retiro.numero_participantes.to_string().bright_green()
+            );
+            println!(
+                "   Fecha inicio: {}",
+                retiro
+                    .fecha_inicio
+                    .format("%Y-%m-%d %H:%M")
+                    .to_string()
+                    .bright_cyan()
+            );
+            println!(
+                "   Fecha fin: {}",
+                retiro
+                    .fecha_fin
+                    .format("%Y-%m-%d %H:%M")
+                    .to_string()
+                    .bright_cyan()
+            );
             if let Some(ubicacion) = &retiro.ubicacion {
                 println!("   Ubicación: {}", ubicacion.bright_magenta());
             }
@@ -236,34 +259,49 @@ async fn listar_retiros(repo: RetiroRepository, args: ListarRetiroArgs) -> Resul
         return Ok(());
     }
 
-    println!("{:<38} {:<25} {:<15} {:<12} {:<12} {:<20}", 
-             "ID".bold(), "NOMBRE".bold(), "ESTADO".bold(), "PARTICIPANTES".bold(), "INICIO".bold(), "UBICACIÓN".bold());
+    println!(
+        "{:<38} {:<25} {:<15} {:<12} {:<12} {:<20}",
+        "ID".bold(),
+        "NOMBRE".bold(),
+        "ESTADO".bold(),
+        "PARTICIPANTES".bold(),
+        "INICIO".bold(),
+        "UBICACIÓN".bold()
+    );
     println!("{}", "─".repeat(120).bright_black());
 
     let total = retiros.len();
-    
+
     for retiro in &retiros {
         let estado_color = match retiro.estado {
             EstadoRetiro::Planificacion => retiro.estado.to_string().yellow(),
             EstadoRetiro::Activo => retiro.estado.to_string().green(),
             EstadoRetiro::Finalizado => retiro.estado.to_string().bright_black(),
         };
-        
+
         let ubicacion_display = retiro.ubicacion.as_deref().unwrap_or("N/A");
-        
+
         println!(
             "{:<38} {:<25} {:<15} {:<12} {:<12} {:<20}",
             retiro.id.to_string().bright_blue(),
             retiro.nombre.bright_white(),
             estado_color,
             retiro.numero_participantes.to_string().bright_green(),
-            retiro.fecha_inicio.format("%Y-%m-%d").to_string().bright_cyan(),
+            retiro
+                .fecha_inicio
+                .format("%Y-%m-%d")
+                .to_string()
+                .bright_cyan(),
             ubicacion_display.bright_magenta()
         );
     }
 
     println!();
-    println!("{} {}", "📊 Total:".bold(), total.to_string().bright_green());
+    println!(
+        "{} {}",
+        "📊 Total:".bold(),
+        total.to_string().bright_green()
+    );
 
     Ok(())
 }
@@ -271,8 +309,8 @@ async fn listar_retiros(repo: RetiroRepository, args: ListarRetiroArgs) -> Resul
 async fn mostrar_retiro(repo: RetiroRepository, args: MostrarRetiroArgs) -> Result<()> {
     println!("{}", "🔍 Buscando retiro...".cyan().bold());
 
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     match repo.get_by_id(id).await? {
         Some(retiro) => {
@@ -281,25 +319,59 @@ async fn mostrar_retiro(repo: RetiroRepository, args: MostrarRetiroArgs) -> Resu
             println!("📋 {}", "Detalles completos:".bold());
             println!("   ID: {}", retiro.id.to_string().bright_blue());
             println!("   Nombre: {}", retiro.nombre.bright_white());
-            println!("   Estado: {}", format!("{}", retiro.estado).bright_yellow());
-            println!("   Participantes: {}", retiro.numero_participantes.to_string().bright_green());
-            println!("   Fecha inicio: {}", retiro.fecha_inicio.format("%Y-%m-%d %H:%M:%S UTC").to_string().bright_cyan());
-            println!("   Fecha fin: {}", retiro.fecha_fin.format("%Y-%m-%d %H:%M:%S UTC").to_string().bright_cyan());
-            
+            println!(
+                "   Estado: {}",
+                format!("{}", retiro.estado).bright_yellow()
+            );
+            println!(
+                "   Participantes: {}",
+                retiro.numero_participantes.to_string().bright_green()
+            );
+            println!(
+                "   Fecha inicio: {}",
+                retiro
+                    .fecha_inicio
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string()
+                    .bright_cyan()
+            );
+            println!(
+                "   Fecha fin: {}",
+                retiro
+                    .fecha_fin
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string()
+                    .bright_cyan()
+            );
+
             if let Some(ubicacion) = &retiro.ubicacion {
                 println!("   Ubicación: {}", ubicacion.bright_magenta());
             } else {
                 println!("   Ubicación: {}", "No especificada".bright_black());
             }
-            
+
             if let Some(descripcion) = &retiro.descripcion {
                 println!("   Descripción: {}", descripcion.bright_black());
             } else {
                 println!("   Descripción: {}", "No especificada".bright_black());
             }
-            
-            println!("   Creado: {}", retiro.created_at.format("%Y-%m-%d %H:%M:%S UTC").to_string().bright_black());
-            println!("   Actualizado: {}", retiro.updated_at.format("%Y-%m-%d %H:%M:%S UTC").to_string().bright_black());
+
+            println!(
+                "   Creado: {}",
+                retiro
+                    .created_at
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string()
+                    .bright_black()
+            );
+            println!(
+                "   Actualizado: {}",
+                retiro
+                    .updated_at
+                    .format("%Y-%m-%d %H:%M:%S UTC")
+                    .to_string()
+                    .bright_black()
+            );
         }
         None => {
             println!("{}", "❌ Retiro no encontrado.".red().bold());
@@ -313,8 +385,8 @@ async fn mostrar_retiro(repo: RetiroRepository, args: MostrarRetiroArgs) -> Resu
 async fn actualizar_retiro(repo: RetiroRepository, args: ActualizarRetiroArgs) -> Result<()> {
     println!("{}", "✏️  Actualizando retiro...".cyan().bold());
 
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     // Obtener retiro actual
     let retiro_actual = match repo.get_by_id(id).await? {
@@ -345,7 +417,9 @@ async fn actualizar_retiro(repo: RetiroRepository, args: ActualizarRetiroArgs) -
         fecha_inicio,
         fecha_fin,
         ubicacion: args.ubicacion.or(retiro_actual.ubicacion),
-        numero_participantes: args.participantes.unwrap_or(retiro_actual.numero_participantes),
+        numero_participantes: args
+            .participantes
+            .unwrap_or(retiro_actual.numero_participantes),
     };
 
     // Validar datos
@@ -361,16 +435,41 @@ async fn actualizar_retiro(repo: RetiroRepository, args: ActualizarRetiroArgs) -
             println!("📋 {}", "Nuevos detalles:".bold());
             println!("   ID: {}", retiro.id.to_string().bright_blue());
             println!("   Nombre: {}", retiro.nombre.bright_white());
-            println!("   Estado: {}", format!("{}", retiro.estado).bright_yellow());
-            println!("   Participantes: {}", retiro.numero_participantes.to_string().bright_green());
-            println!("   Fecha inicio: {}", retiro.fecha_inicio.format("%Y-%m-%d %H:%M").to_string().bright_cyan());
-            println!("   Fecha fin: {}", retiro.fecha_fin.format("%Y-%m-%d %H:%M").to_string().bright_cyan());
+            println!(
+                "   Estado: {}",
+                format!("{}", retiro.estado).bright_yellow()
+            );
+            println!(
+                "   Participantes: {}",
+                retiro.numero_participantes.to_string().bright_green()
+            );
+            println!(
+                "   Fecha inicio: {}",
+                retiro
+                    .fecha_inicio
+                    .format("%Y-%m-%d %H:%M")
+                    .to_string()
+                    .bright_cyan()
+            );
+            println!(
+                "   Fecha fin: {}",
+                retiro
+                    .fecha_fin
+                    .format("%Y-%m-%d %H:%M")
+                    .to_string()
+                    .bright_cyan()
+            );
             if let Some(ubicacion) = &retiro.ubicacion {
                 println!("   Ubicación: {}", ubicacion.bright_magenta());
             }
         }
         None => {
-            println!("{}", "❌ Error: Retiro no encontrado durante la actualización.".red().bold());
+            println!(
+                "{}",
+                "❌ Error: Retiro no encontrado durante la actualización."
+                    .red()
+                    .bold()
+            );
             return Err(AppError::NotFound("Retiro".to_string()));
         }
     }
@@ -381,8 +480,8 @@ async fn actualizar_retiro(repo: RetiroRepository, args: ActualizarRetiroArgs) -
 async fn cambiar_estado_retiro(repo: RetiroRepository, args: EstadoRetiroArgs) -> Result<()> {
     println!("{}", "🔄 Cambiando estado del retiro...".cyan().bold());
 
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     let nuevo_estado: EstadoRetiro = args.estado.into();
 
@@ -392,7 +491,10 @@ async fn cambiar_estado_retiro(repo: RetiroRepository, args: EstadoRetiroArgs) -
             println!();
             println!("📋 {}", "Detalles:".bold());
             println!("   Retiro: {}", retiro.nombre.bright_white());
-            println!("   Nuevo estado: {}", format!("{}", retiro.estado).bright_yellow());
+            println!(
+                "   Nuevo estado: {}",
+                format!("{}", retiro.estado).bright_yellow()
+            );
         }
         None => {
             println!("{}", "❌ Retiro no encontrado.".red().bold());
@@ -404,8 +506,8 @@ async fn cambiar_estado_retiro(repo: RetiroRepository, args: EstadoRetiroArgs) -
 }
 
 async fn eliminar_retiro(repo: RetiroRepository, args: EliminarRetiroArgs) -> Result<()> {
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     // Verificar que el retiro existe
     let retiro = match repo.get_by_id(id).await? {
@@ -417,13 +519,30 @@ async fn eliminar_retiro(repo: RetiroRepository, args: EliminarRetiroArgs) -> Re
     };
 
     if !args.force {
-        println!("{}", "⚠️  ¿Estás seguro de que quieres eliminar este retiro?".yellow().bold());
+        println!(
+            "{}",
+            "⚠️  ¿Estás seguro de que quieres eliminar este retiro?"
+                .yellow()
+                .bold()
+        );
         println!("   Nombre: {}", retiro.nombre.bright_white());
-        println!("   Estado: {}", format!("{}", retiro.estado).bright_yellow());
-        println!("   Participantes: {}", retiro.numero_participantes.to_string().bright_green());
+        println!(
+            "   Estado: {}",
+            format!("{}", retiro.estado).bright_yellow()
+        );
+        println!(
+            "   Participantes: {}",
+            retiro.numero_participantes.to_string().bright_green()
+        );
         println!();
-        println!("{}", "⚠️  ADVERTENCIA: Esto también eliminará todas las transacciones asociadas.".red());
-        println!("{}", "Usa --force para confirmar la eliminación.".bright_black());
+        println!(
+            "{}",
+            "⚠️  ADVERTENCIA: Esto también eliminará todas las transacciones asociadas.".red()
+        );
+        println!(
+            "{}",
+            "Usa --force para confirmar la eliminación.".bright_black()
+        );
         return Ok(());
     }
 
@@ -434,7 +553,10 @@ async fn eliminar_retiro(repo: RetiroRepository, args: EliminarRetiroArgs) -> Re
             println!("{}", "✅ Retiro eliminado exitosamente!".green().bold());
         }
         false => {
-            println!("{}", "❌ Error: No se pudo eliminar el retiro.".red().bold());
+            println!(
+                "{}",
+                "❌ Error: No se pudo eliminar el retiro.".red().bold()
+            );
             return Err(AppError::Internal("Error eliminando retiro".to_string()));
         }
     }
@@ -443,41 +565,62 @@ async fn eliminar_retiro(repo: RetiroRepository, args: EliminarRetiroArgs) -> Re
 }
 
 async fn buscar_retiros(repo: RetiroRepository, args: BuscarRetiroArgs) -> Result<()> {
-    println!("{} '{}'", "🔍 Buscando retiros con:".cyan().bold(), args.query.bright_white());
+    println!(
+        "{} '{}'",
+        "🔍 Buscando retiros con:".cyan().bold(),
+        args.query.bright_white()
+    );
     println!();
 
     let retiros = repo.search_by_name(&args.query).await?;
 
     if retiros.is_empty() {
-        println!("{}", "📭 No se encontraron retiros que coincidan con la búsqueda.".yellow());
+        println!(
+            "{}",
+            "📭 No se encontraron retiros que coincidan con la búsqueda.".yellow()
+        );
         return Ok(());
     }
 
-    println!("{:<38} {:<25} {:<15} {:<12} {:<12}", 
-             "ID".bold(), "NOMBRE".bold(), "ESTADO".bold(), "PARTICIPANTES".bold(), "INICIO".bold());
+    println!(
+        "{:<38} {:<25} {:<15} {:<12} {:<12}",
+        "ID".bold(),
+        "NOMBRE".bold(),
+        "ESTADO".bold(),
+        "PARTICIPANTES".bold(),
+        "INICIO".bold()
+    );
     println!("{}", "─".repeat(100).bright_black());
 
     let total = retiros.len();
-    
+
     for retiro in &retiros {
         let estado_color = match retiro.estado {
             EstadoRetiro::Planificacion => retiro.estado.to_string().yellow(),
             EstadoRetiro::Activo => retiro.estado.to_string().green(),
             EstadoRetiro::Finalizado => retiro.estado.to_string().bright_black(),
         };
-        
+
         println!(
             "{:<38} {:<25} {:<15} {:<12} {:<12}",
             retiro.id.to_string().bright_blue(),
             retiro.nombre.bright_white(),
             estado_color,
             retiro.numero_participantes.to_string().bright_green(),
-            retiro.fecha_inicio.format("%Y-%m-%d").to_string().bright_cyan(),
+            retiro
+                .fecha_inicio
+                .format("%Y-%m-%d")
+                .to_string()
+                .bright_cyan(),
         );
     }
 
     println!();
-    println!("{} {}", "📊 Encontrados:".bold(), total.to_string().bright_green());
+    println!(
+        "{} {}",
+        "📊 Encontrados:".bold(),
+        total.to_string().bright_green()
+    );
 
     Ok(())
 }

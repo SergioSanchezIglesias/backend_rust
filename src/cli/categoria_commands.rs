@@ -27,11 +27,11 @@ pub struct CrearArgs {
     /// Nombre de la categoría
     #[arg(short, long)]
     pub nombre: String,
-    
+
     /// Tipo de categoría (ingreso/gasto)
     #[arg(short, long, value_enum)]
     pub tipo: CliTipoCategoria,
-    
+
     /// Color en formato hexadecimal (ej: #FF5733)
     #[arg(short, long)]
     pub color: String,
@@ -54,15 +54,15 @@ pub struct MostrarArgs {
 pub struct ActualizarArgs {
     /// ID de la categoría a actualizar
     pub id: String,
-    
+
     /// Nuevo nombre de la categoría
     #[arg(short, long)]
     pub nombre: Option<String>,
-    
+
     /// Nuevo tipo de categoría
     #[arg(short, long, value_enum)]
     pub tipo: Option<CliTipoCategoria>,
-    
+
     /// Nuevo color en formato hexadecimal
     #[arg(short, long)]
     pub color: Option<String>,
@@ -72,7 +72,7 @@ pub struct ActualizarArgs {
 pub struct EliminarArgs {
     /// ID de la categoría a eliminar
     pub id: String,
-    
+
     /// Confirmar eliminación sin preguntar
     #[arg(short, long)]
     pub force: bool,
@@ -95,9 +95,9 @@ impl From<CliTipoCategoria> for TipoCategoria {
 
 pub async fn handle_categoria_command(command: CategoriaCommands) -> Result<()> {
     // Conectar a la base de datos
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:./retiros.db".to_string());
-    
+    let database_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite:./retiros.db".to_string());
+
     let db = Database::new(&database_url).await?;
     let repo = CategoriaRepository::new(db.pool().clone());
 
@@ -133,7 +133,11 @@ async fn crear_categoria(repo: CategoriaRepository, args: CrearArgs) -> Result<(
             println!("   ID: {}", categoria.id.to_string().bright_blue());
             println!("   Nombre: {}", categoria.nombre.bright_white());
             println!("   Tipo: {}", format!("{}", categoria.tipo).bright_yellow());
-            println!("   Color: {} {}", categoria.color.bright_magenta(), "●".color(categoria.color.as_str()));
+            println!(
+                "   Color: {} {}",
+                categoria.color.bright_magenta(),
+                "●".color(categoria.color.as_str())
+            );
         }
         Err(e) => {
             println!("{} {}", "❌ Error creando categoría:".red().bold(), e);
@@ -158,17 +162,23 @@ async fn listar_categorias(repo: CategoriaRepository, args: ListarArgs) -> Resul
         return Ok(());
     }
 
-    println!("{:<38} {:<20} {:<10} {:<8}", "ID".bold(), "NOMBRE".bold(), "TIPO".bold(), "COLOR".bold());
+    println!(
+        "{:<38} {:<20} {:<10} {:<8}",
+        "ID".bold(),
+        "NOMBRE".bold(),
+        "TIPO".bold(),
+        "COLOR".bold()
+    );
     println!("{}", "─".repeat(80).bright_black());
 
     let total = categorias.len();
-    
+
     for categoria in &categorias {
         let tipo_color = match categoria.tipo {
             TipoCategoria::Ingreso => categoria.tipo.to_string().green(),
             TipoCategoria::Gasto => categoria.tipo.to_string().red(),
         };
-        
+
         println!(
             "{:<38} {:<20} {:<10} {} {}",
             categoria.id.to_string().bright_blue(),
@@ -180,7 +190,11 @@ async fn listar_categorias(repo: CategoriaRepository, args: ListarArgs) -> Resul
     }
 
     println!();
-    println!("{} {}", "📊 Total:".bold(), total.to_string().bright_green());
+    println!(
+        "{} {}",
+        "📊 Total:".bold(),
+        total.to_string().bright_green()
+    );
 
     Ok(())
 }
@@ -188,8 +202,8 @@ async fn listar_categorias(repo: CategoriaRepository, args: ListarArgs) -> Resul
 async fn mostrar_categoria(repo: CategoriaRepository, args: MostrarArgs) -> Result<()> {
     println!("{}", "🔍 Buscando categoría...".cyan().bold());
 
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     match repo.get_by_id(id).await? {
         Some(categoria) => {
@@ -199,7 +213,11 @@ async fn mostrar_categoria(repo: CategoriaRepository, args: MostrarArgs) -> Resu
             println!("   ID: {}", categoria.id.to_string().bright_blue());
             println!("   Nombre: {}", categoria.nombre.bright_white());
             println!("   Tipo: {}", format!("{}", categoria.tipo).bright_yellow());
-            println!("   Color: {} {}", categoria.color.bright_magenta(), "●".color(categoria.color.as_str()));
+            println!(
+                "   Color: {} {}",
+                categoria.color.bright_magenta(),
+                "●".color(categoria.color.as_str())
+            );
         }
         None => {
             println!("{}", "❌ Categoría no encontrada.".red().bold());
@@ -213,8 +231,8 @@ async fn mostrar_categoria(repo: CategoriaRepository, args: MostrarArgs) -> Resu
 async fn actualizar_categoria(repo: CategoriaRepository, args: ActualizarArgs) -> Result<()> {
     println!("{}", "✏️  Actualizando categoría...".cyan().bold());
 
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     // Obtener categoría actual
     let categoria_actual = match repo.get_by_id(id).await? {
@@ -240,16 +258,28 @@ async fn actualizar_categoria(repo: CategoriaRepository, args: ActualizarArgs) -
 
     match repo.update(id, update_data).await? {
         Some(categoria) => {
-            println!("{}", "✅ Categoría actualizada exitosamente!".green().bold());
+            println!(
+                "{}",
+                "✅ Categoría actualizada exitosamente!".green().bold()
+            );
             println!();
             println!("📋 {}", "Nuevos detalles:".bold());
             println!("   ID: {}", categoria.id.to_string().bright_blue());
             println!("   Nombre: {}", categoria.nombre.bright_white());
             println!("   Tipo: {}", format!("{}", categoria.tipo).bright_yellow());
-            println!("   Color: {} {}", categoria.color.bright_magenta(), "●".color(categoria.color.as_str()));
+            println!(
+                "   Color: {} {}",
+                categoria.color.bright_magenta(),
+                "●".color(categoria.color.as_str())
+            );
         }
         None => {
-            println!("{}", "❌ Error: Categoría no encontrada durante la actualización.".red().bold());
+            println!(
+                "{}",
+                "❌ Error: Categoría no encontrada durante la actualización."
+                    .red()
+                    .bold()
+            );
             return Err(AppError::NotFound("Categoría".to_string()));
         }
     }
@@ -258,8 +288,8 @@ async fn actualizar_categoria(repo: CategoriaRepository, args: ActualizarArgs) -
 }
 
 async fn eliminar_categoria(repo: CategoriaRepository, args: EliminarArgs) -> Result<()> {
-    let id = Uuid::parse_str(&args.id)
-        .map_err(|_| AppError::Validation("ID inválido".to_string()))?;
+    let id =
+        Uuid::parse_str(&args.id).map_err(|_| AppError::Validation("ID inválido".to_string()))?;
 
     // Verificar que la categoría existe
     let categoria = match repo.get_by_id(id).await? {
@@ -271,11 +301,19 @@ async fn eliminar_categoria(repo: CategoriaRepository, args: EliminarArgs) -> Re
     };
 
     if !args.force {
-        println!("{}", "⚠️  ¿Estás seguro de que quieres eliminar esta categoría?".yellow().bold());
+        println!(
+            "{}",
+            "⚠️  ¿Estás seguro de que quieres eliminar esta categoría?"
+                .yellow()
+                .bold()
+        );
         println!("   Nombre: {}", categoria.nombre.bright_white());
         println!("   Tipo: {}", format!("{}", categoria.tipo).bright_yellow());
         println!();
-        println!("{}", "Usa --force para confirmar la eliminación.".bright_black());
+        println!(
+            "{}",
+            "Usa --force para confirmar la eliminación.".bright_black()
+        );
         return Ok(());
     }
 
@@ -286,7 +324,10 @@ async fn eliminar_categoria(repo: CategoriaRepository, args: EliminarArgs) -> Re
             println!("{}", "✅ Categoría eliminada exitosamente!".green().bold());
         }
         false => {
-            println!("{}", "❌ Error: No se pudo eliminar la categoría.".red().bold());
+            println!(
+                "{}",
+                "❌ Error: No se pudo eliminar la categoría.".red().bold()
+            );
             return Err(AppError::Internal("Error eliminando categoría".to_string()));
         }
     }

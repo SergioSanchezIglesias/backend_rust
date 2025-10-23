@@ -1,9 +1,9 @@
-use crate::models::{Retiro, CreateRetiro, EstadoRetiro};
+use crate::models::{CreateRetiro, EstadoRetiro, Retiro};
 use crate::{AppError, Result};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use validator::Validate;
-use chrono::{DateTime, Utc, NaiveDateTime};
 
 pub struct RetiroRepository {
     pool: SqlitePool,
@@ -15,18 +15,21 @@ fn parse_flexible_datetime(date_str: &str) -> Result<DateTime<Utc>> {
     if let Ok(dt) = DateTime::parse_from_rfc3339(date_str) {
         return Ok(dt.with_timezone(&Utc));
     }
-    
+
     // Intentar formato SQLite datetime: "YYYY-MM-DD HH:MM:SS"
     if let Ok(naive_dt) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S") {
         return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
     }
-    
+
     // Intentar formato SQLite datetime con microsegundos: "YYYY-MM-DD HH:MM:SS.ffffff"
     if let Ok(naive_dt) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S%.f") {
         return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
     }
-    
-    Err(AppError::Internal(format!("Invalid date format: {}", date_str)))
+
+    Err(AppError::Internal(format!(
+        "Invalid date format: {}",
+        date_str
+    )))
 }
 
 impl RetiroRepository {
@@ -41,7 +44,7 @@ impl RetiroRepository {
             .map_err(|e| AppError::Validation(e.to_string()))?;
 
         let retiro = Retiro::new(data);
-        
+
         // Crear variables para evitar problemas de lifetime
         let id_str = retiro.id.to_string();
         let estado_str = retiro.estado.to_string();
@@ -216,7 +219,11 @@ impl RetiroRepository {
     }
 
     /// Actualizar el estado de un retiro
-    pub async fn update_estado(&self, id: Uuid, nuevo_estado: EstadoRetiro) -> Result<Option<Retiro>> {
+    pub async fn update_estado(
+        &self,
+        id: Uuid,
+        nuevo_estado: EstadoRetiro,
+    ) -> Result<Option<Retiro>> {
         let id_str = id.to_string();
         let estado_str = nuevo_estado.to_string();
 
@@ -245,12 +252,9 @@ impl RetiroRepository {
     /// Eliminar un retiro
     pub async fn delete(&self, id: Uuid) -> Result<bool> {
         let id_str = id.to_string();
-        let result = sqlx::query!(
-            "DELETE FROM retiros WHERE id = ?1",
-            id_str
-        )
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query!("DELETE FROM retiros WHERE id = ?1", id_str)
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected() > 0)
     }

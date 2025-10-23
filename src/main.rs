@@ -1,5 +1,5 @@
 use backend_rust::cli::run_cli;
-use tracing::{Level};
+use tracing::Level;
 use tracing_subscriber;
 
 #[tokio::main]

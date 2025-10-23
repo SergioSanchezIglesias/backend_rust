@@ -20,7 +20,7 @@ impl CategoriaRepository {
             .map_err(|e| AppError::Validation(e.to_string()))?;
 
         let categoria = Categoria::new(data);
-        
+
         // Crear variables para evitar problemas de lifetime
         let id_str = categoria.id.to_string();
         let tipo_str = categoria.tipo.to_string();
@@ -160,12 +160,9 @@ impl CategoriaRepository {
     /// Eliminar una categoría
     pub async fn delete(&self, id: Uuid) -> Result<bool> {
         let id_str = id.to_string();
-        let result = sqlx::query!(
-            "DELETE FROM categorias WHERE id = ?1",
-            id_str
-        )
-        .execute(&self.pool)
-        .await?;
+        let result = sqlx::query!("DELETE FROM categorias WHERE id = ?1", id_str)
+            .execute(&self.pool)
+            .await?;
 
         Ok(result.rows_affected() > 0)
     }
@@ -183,4 +180,3 @@ impl CategoriaRepository {
         Ok(row.count.into())
     }
 }
-

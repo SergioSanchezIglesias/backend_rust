@@ -1,8 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 use validator::Validate;
-use sqlx::FromRow;
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
@@ -59,6 +59,16 @@ impl Transaccion {
             fecha: data.fecha,
             created_at: now,
             updated_at: now,
+        }
+    }
+}
+
+// Implementar Display para facilitar la conversión a string
+impl std::fmt::Display for TipoTransaccion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TipoTransaccion::Ingreso => write!(f, "Ingreso"),
+            TipoTransaccion::Gasto => write!(f, "Gasto"),
         }
     }
 }
