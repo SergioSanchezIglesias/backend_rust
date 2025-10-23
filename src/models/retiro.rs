@@ -71,3 +71,14 @@ impl Retiro {
         }
     }
 }
+
+// Implementar Display para facilitar la conversión a string
+impl std::fmt::Display for EstadoRetiro {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EstadoRetiro::Planificacion => write!(f, "Planificacion"),
+            EstadoRetiro::Activo => write!(f, "Activo"),
+            EstadoRetiro::Finalizado => write!(f, "Finalizado"),
+        }
+    }
+}
