@@ -163,73 +163,97 @@ async function loadSectionData(sectionName) {
 
 async function loadDashboard() {
     try {
-        // Mostrar retiro activo
-        const retiroActivoDiv = document.getElementById('retiro-activo');
-        const retiroActivo = appState.retiros.find(r => r.estado === 'Activo');
+        // Cargar balance global (siempre visible, compacto)
+        const balanceGlobal = await invoke('get_balance_global');
+        const balanceGlobalDiv = document.getElementById('balance-global');
         
-        if (retiroActivo) {
-            retiroActivoDiv.innerHTML = `
-                <h4>${retiroActivo.nombre}</h4>
-                <p>${retiroActivo.numero_participantes} participantes</p>
-                <p class="estado-badge estado-activo">${retiroActivo.estado}</p>
-                ${retiroActivo.ubicacion ? `<p><small>📍 ${retiroActivo.ubicacion}</small></p>` : ''}
-            `;
-            
-            // Cargar balance del retiro activo
-            const balance = await invoke('get_balance_retiro', { retiroId: retiroActivo.id });
-            
-            document.getElementById('balance-actual').innerHTML = `
-                <div class="balance-info">
-                    <p><strong>Ingresos:</strong> <span class="text-success">${balance.total_ingresos.toFixed(2)}€</span></p>
-                    <p><strong>Gastos:</strong> <span class="text-danger">${balance.total_gastos.toFixed(2)}€</span></p>
-                    <p><strong>Balance:</strong> <span class="${balance.balance >= 0 ? 'text-success' : 'text-danger'}">
-                        ${balance.balance.toFixed(2)}€
-                    </span></p>
-                </div>
-            `;
-            
-                    document.getElementById('total-transacciones').innerHTML = `
-                        <h4>${balance.transacciones_count}</h4>
-                        <p>Transacciones en <strong>${retiroActivo.nombre}</strong></p>
-                        <small>Promedio por participante: ${(balance.total_gastos / retiroActivo.numero_participantes).toFixed(2)}€</small>
-                    `;
-        } else {
-            retiroActivoDiv.innerHTML = '<p>No hay retiros activos</p>';
-            document.getElementById('balance-actual').innerHTML = '<p>No disponible</p>';
-            document.getElementById('total-transacciones').innerHTML = '<p>No disponible</p>';
-        }
+        const isPositive = balanceGlobal.balance >= 0;
+        balanceGlobalDiv.className = `balance-global-compact ${isPositive ? 'balance-positive-bg' : 'balance-negative-bg'}`;
         
-        // Mostrar resumen general de retiros
-        const resumenDiv = document.getElementById('resumen-retiros');
-        const totalRetiros = appState.retiros.length;
-        const retirosActivos = appState.retiros.filter(r => r.estado === 'Activo').length;
-        const retirosFinalizados = appState.retiros.filter(r => r.estado === 'Finalizado').length;
-        const totalCategorias = appState.categorias.length;
-        
-        resumenDiv.innerHTML = `
-            <div class="balance-info">
-                <p><strong>Total Retiros:</strong> <span>${totalRetiros}</span></p>
-                <p><strong>Activos:</strong> <span class="text-success">${retirosActivos}</span></p>
-                <p><strong>Finalizados:</strong> <span>${retirosFinalizados}</span></p>
-                <p><strong>Categorías:</strong> <span>${totalCategorias}</span></p>
+        balanceGlobalDiv.innerHTML = `
+            <div class="balance-compact-content">
+                <span class="balance-compact-label">Balance Global</span>
+                <span class="balance-compact-amount">
+                    ${isPositive ? '+' : ''}${balanceGlobal.balance.toFixed(2)}€
+                </span>
             </div>
         `;
         
-        // Habilitar/deshabilitar botón de transacción rápida
-        const quickTransaccionBtn = document.getElementById('quick-transaccion-btn');
-        if (quickTransaccionBtn) {
-            if (retiroActivo) {
-                quickTransaccionBtn.disabled = false;
-                quickTransaccionBtn.title = `Crear transacción para ${retiroActivo.nombre}`;
-            } else {
-                quickTransaccionBtn.disabled = true;
-                quickTransaccionBtn.title = 'No hay retiros activos';
-            }
+        // Cargar estadísticas administrativas
+        const [estadisticas, retirosRecientes] = await Promise.all([
+            invoke('get_estadisticas_admin'),
+            invoke('get_retiros_finalizados_recientes')
+        ]);
+        
+        // Estadísticas comparativas
+        document.getElementById('estadisticas-comparativas').innerHTML = `
+            <div class="balance-info">
+                <p><strong>Balance promedio:</strong> 
+                    <span class="${estadisticas.promedio_balance_por_retiro >= 0 ? 'text-success' : 'text-danger'}">
+                        ${estadisticas.promedio_balance_por_retiro.toFixed(2)}€
+                    </span>
+                </p>
+                <p><strong>Ingreso promedio:</strong> 
+                    <span class="text-success">${estadisticas.promedio_ingreso_por_retiro.toFixed(2)}€</span>
+                </p>
+                <p><strong>Gasto promedio:</strong> 
+                    <span class="text-danger">${estadisticas.promedio_gasto_por_retiro.toFixed(2)}€</span>
+                </p>
+                <p><strong>Retiros con datos:</strong> <span>${estadisticas.retiros_con_transacciones}</span></p>
+            </div>
+        `;
+        
+        // Top categorías de gastos
+        const topCategoriasDiv = document.getElementById('top-categorias');
+        if (estadisticas.top_categorias_gastos.length > 0) {
+            topCategoriasDiv.innerHTML = `
+                <div class="top-categorias-list">
+                    ${estadisticas.top_categorias_gastos.map((cat, index) => `
+                        <div class="top-categoria-item">
+                            <div class="top-categoria-header">
+                                <span class="top-categoria-rank">#${index + 1}</span>
+                                <div class="color-indicator" style="background-color: ${cat.color}"></div>
+                                <span class="top-categoria-name">${cat.nombre}</span>
+                            </div>
+                            <span class="top-categoria-amount text-danger">${cat.total.toFixed(2)}€</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            topCategoriasDiv.innerHTML = '<p class="text-muted">No hay datos de gastos aún</p>';
         }
+        
+        // Retiros finalizados recientes
+        const retirosRecientesDiv = document.getElementById('retiros-recientes');
+        if (retirosRecientes.length > 0) {
+            retirosRecientesDiv.innerHTML = `
+                <div class="retiros-recientes-list">
+                    ${retirosRecientes.map(retiro => `
+                        <div class="retiro-reciente-item">
+                            <div class="retiro-reciente-header">
+                                <strong>${retiro.nombre}</strong>
+                                <small class="text-muted">${retiro.fecha_fin}</small>
+                            </div>
+                            <div class="retiro-reciente-details">
+                                <span>${retiro.numero_participantes} participantes</span>
+                                <span class="text-danger">${retiro.total_gastos.toFixed(2)}€</span>
+                                <span class="${retiro.balance >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${retiro.balance >= 0 ? '+' : ''}${retiro.balance.toFixed(2)}€
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            retirosRecientesDiv.innerHTML = '<p class="text-muted">No hay retiros finalizados aún</p>';
+        }
+        
         
     } catch (error) {
         console.error('Error cargando dashboard:', error);
-        showToast('Error cargando dashboard: ' + error, 'error');
+        showToast('Error cargando dashboard: ' + getErrorMessage(error), 'error');
     }
 }
 
@@ -441,25 +465,7 @@ function formatDate(dateString) {
 }
 
 function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    if (!container) {
-        return;
-    }
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <p>${message}</p>
-    `;
-    
-    container.appendChild(toast);
-    
-    // Remover después de 3 segundos
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.remove();
-        }
-    }, 3000);
+    // Snackbars deshabilitados - no mostrar notificaciones
 }
 
 function showModal(content) {

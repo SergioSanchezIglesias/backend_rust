@@ -210,6 +210,133 @@ impl TransaccionRepository {
 
         Ok(row.count as i64)
     }
+
+    /// Calcular balance global (todos los retiros)
+    pub async fn calculate_global_balance(&self) -> Result<(f64, f64, i64)> {
+        // Total ingresos
+        let ingresos_row = sqlx::query!(
+            "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE tipo = 'Ingreso'"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        // Total gastos
+        let gastos_row = sqlx::query!(
+            "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE tipo = 'Gasto'"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        // Total transacciones
+        let count_row = sqlx::query!(
+            "SELECT COUNT(*) as count FROM transacciones"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok((
+            ingresos_row.total as f64,
+            gastos_row.total as f64,
+            count_row.count as i64,
+        ))
+    }
+
+    /// Obtener top categorías de gastos (por monto total)
+    pub async fn get_top_categorias_gastos(&self, limit: i32) -> Result<Vec<(String, String, f64)>> {
+        let rows = sqlx::query!(
+            r#"
+            SELECT 
+                c.nombre,
+                c.color,
+                COALESCE(SUM(t.monto), 0) as total 
+            FROM transacciones t
+            INNER JOIN categorias c ON t.categoria_id = c.id
+            WHERE t.tipo = 'Gasto' 
+            GROUP BY c.id, c.nombre, c.color
+            ORDER BY total DESC 
+            LIMIT ?1
+            "#,
+            limit
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut resultados = Vec::new();
+        for row in rows {
+            resultados.push((
+                row.nombre,
+                row.color,
+                row.total as f64,
+            ));
+        }
+
+        Ok(resultados)
+    }
+
+    /// Calcular estadísticas por retiro (para comparativas)
+    pub async fn get_estadisticas_por_retiro(&self) -> Result<(f64, f64, f64, i32)> {
+        // Promedio de balance por retiro
+        let balance_promedio_row = sqlx::query!(
+            r#"
+            SELECT 
+                COALESCE(AVG(balance), 0) as promedio
+            FROM (
+                SELECT 
+                    retiro_id,
+                    COALESCE(SUM(CASE WHEN tipo = 'Ingreso' THEN monto ELSE 0 END), 0) - 
+                    COALESCE(SUM(CASE WHEN tipo = 'Gasto' THEN monto ELSE 0 END), 0) as balance
+                FROM transacciones
+                GROUP BY retiro_id
+            ) as balances
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        // Promedio de ingresos por retiro
+        let ingresos_promedio_row = sqlx::query!(
+            r#"
+            SELECT 
+                COALESCE(AVG(total_ingresos), 0) as promedio
+            FROM (
+                SELECT 
+                    retiro_id,
+                    COALESCE(SUM(monto), 0) as total_ingresos
+                FROM transacciones
+                WHERE tipo = 'Ingreso'
+                GROUP BY retiro_id
+            ) as ingresos_por_retiro
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        // Promedio de gastos por retiro
+        let gastos_promedio_row = sqlx::query!(
+            r#"
+            SELECT 
+                COALESCE(AVG(total_gastos), 0) as promedio,
+                COUNT(DISTINCT retiro_id) as count_retiros
+            FROM (
+                SELECT 
+                    retiro_id,
+                    COALESCE(SUM(monto), 0) as total_gastos
+                FROM transacciones
+                WHERE tipo = 'Gasto'
+                GROUP BY retiro_id
+            ) as gastos_por_retiro
+            "#
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok((
+            balance_promedio_row.promedio as f64,
+            ingresos_promedio_row.promedio as f64,
+            gastos_promedio_row.promedio as f64,
+            gastos_promedio_row.count_retiros as i32,
+        ))
+    }
 }
 
 /// Estructura para resumen financiero

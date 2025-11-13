@@ -277,6 +277,47 @@ impl RetiroRepository {
         self.get_by_estado(EstadoRetiro::Activo).await
     }
 
+    /// Obtener total de participantes de todos los retiros
+    pub async fn get_total_participantes(&self) -> Result<i64> {
+        let row = sqlx::query!(
+            "SELECT COALESCE(SUM(numero_participantes), 0) as total FROM retiros"
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(row.total as i64)
+    }
+
+    /// Obtener retiros finalizados recientes (últimos N)
+    pub async fn get_finalizados_recientes(&self, limit: i32) -> Result<Vec<Retiro>> {
+        let rows = sqlx::query!(
+            "SELECT id, nombre, descripcion, fecha_inicio, fecha_fin, ubicacion, numero_participantes, estado, created_at, updated_at FROM retiros WHERE estado = 'Finalizado' ORDER BY fecha_fin DESC LIMIT ?1",
+            limit
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+        let mut retiros = Vec::new();
+        for row in rows {
+            let retiro = Retiro {
+                id: Uuid::parse_str(&row.id)
+                    .map_err(|e| AppError::Internal(format!("Invalid UUID: {}", e)))?,
+                nombre: row.nombre,
+                descripcion: row.descripcion,
+                fecha_inicio: parse_flexible_datetime(&row.fecha_inicio)?,
+                fecha_fin: parse_flexible_datetime(&row.fecha_fin)?,
+                ubicacion: row.ubicacion,
+                numero_participantes: row.numero_participantes as i32,
+                estado: EstadoRetiro::Finalizado,
+                created_at: parse_flexible_datetime(&row.created_at)?,
+                updated_at: parse_flexible_datetime(&row.updated_at)?,
+            };
+            retiros.push(retiro);
+        }
+
+        Ok(retiros)
+    }
+
     /// Buscar retiros por nombre (búsqueda parcial)
     pub async fn search_by_name(&self, query: &str) -> Result<Vec<Retiro>> {
         let search_pattern = format!("%{}%", query);

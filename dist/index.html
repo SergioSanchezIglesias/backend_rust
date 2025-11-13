@@ -44,52 +44,36 @@
             <!-- Dashboard Section -->
             <section id="dashboard" class="content-section active">
                 <div class="section-header">
-                    <h2>Dashboard</h2>
-                    <p>Resumen general del sistema</p>
+                    <div>
+                        <h2>Dashboard</h2>
+                        <p>Resumen general del sistema</p>
+                    </div>
+                    <!-- Balance Global Compacto -->
+                    <div id="balance-global" class="balance-global-compact">
+                        <p class="loading">Cargando...</p>
+                    </div>
                 </div>
                 
                 <div class="dashboard-cards">
                     <div class="card">
-                        <h3>Retiro Activo</h3>
-                        <div id="retiro-activo">
+                        <h3>📊 Estadísticas Comparativas</h3>
+                        <div id="estadisticas-comparativas">
                             <p class="loading">Cargando...</p>
                         </div>
                     </div>
                     
                     <div class="card">
-                        <h3>Balance Actual</h3>
-                        <div id="balance-actual">
+                        <h3>🏆 Top Categorías de Gastos</h3>
+                        <div id="top-categorias">
                             <p class="loading">Cargando...</p>
                         </div>
                     </div>
                     
                     <div class="card">
-                        <h3>Total Transacciones</h3>
-                        <div id="total-transacciones">
+                        <h3>📅 Retiros Finalizados Recientes</h3>
+                        <div id="retiros-recientes">
                             <p class="loading">Cargando...</p>
                         </div>
-                    </div>
-                    
-                    <div class="card">
-                        <h3>Resumen de Retiros</h3>
-                        <div id="resumen-retiros">
-                            <p class="loading">Cargando...</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="dashboard-section">
-                    <h3>Acciones Rápidas</h3>
-                    <div class="quick-actions">
-                        <button class="btn btn-primary" onclick="showCreateRetiroModal()">
-                            🏕️ Nuevo Retiro
-                        </button>
-                        <button class="btn btn-success" onclick="showCreateTransaccionModal()" id="quick-transaccion-btn">
-                            💳 Nueva Transacción
-                        </button>
-                        <button class="btn btn-secondary" onclick="showCreateCategoriaModal()">
-                            🏷️ Nueva Categoría
-                        </button>
                     </div>
                 </div>
             </section>
@@ -212,9 +196,6 @@
             <!-- Modal content will be dynamically inserted here -->
         </div>
     </div>
-
-    <!-- Toast notifications -->
-    <div id="toast-container" class="toast-container"></div>
 
     <script src="app.js"></script>
 </body>

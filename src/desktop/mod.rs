@@ -22,7 +22,10 @@ pub async fn run_desktop() -> Result<()> {
             commands::get_transacciones,
             commands::create_transaccion,
             commands::delete_transaccion,
-            commands::get_balance_retiro
+            commands::get_balance_retiro,
+            commands::get_balance_global,
+            commands::get_estadisticas_admin,
+            commands::get_retiros_finalizados_recientes
         ])
         .run(tauri::generate_context!())
         .map_err(|e| crate::AppError::Desktop(e.to_string()))?;
