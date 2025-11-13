@@ -1,4 +1,3 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
 use clap::{Args, Subcommand};
 use colored::*;
 use uuid::Uuid;
@@ -119,23 +118,6 @@ pub async fn handle_transaccion_command(command: TransaccionCommands) -> Result<
     }
 }
 
-fn parse_datetime(date_str: &str) -> Result<DateTime<Utc>> {
-    // Intentar parsear con formato "YYYY-MM-DD HH:MM:SS"
-    if let Ok(naive_dt) = NaiveDateTime::parse_from_str(date_str, "%Y-%m-%d %H:%M:%S") {
-        return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
-    }
-
-    // Intentar parsear solo fecha "YYYY-MM-DD" (asumiendo 00:00:00)
-    if let Ok(naive_date) = chrono::NaiveDate::parse_from_str(date_str, "%Y-%m-%d") {
-        let naive_dt = naive_date.and_hms_opt(0, 0, 0).unwrap();
-        return Ok(DateTime::from_naive_utc_and_offset(naive_dt, Utc));
-    }
-
-    Err(AppError::Validation(format!(
-        "Formato de fecha inválido: {}. Use YYYY-MM-DD o YYYY-MM-DD HH:MM:SS",
-        date_str
-    )))
-}
 
 async fn crear_transaccion(repo: TransaccionRepository, args: CrearTransaccionArgs) -> Result<()> {
     println!("{}", "💰 Creando nueva transacción...".cyan().bold());
@@ -146,11 +128,7 @@ async fn crear_transaccion(repo: TransaccionRepository, args: CrearTransaccionAr
     let categoria_id = Uuid::parse_str(&args.categoria_id)
         .map_err(|_| AppError::Validation("ID de categoría inválido".to_string()))?;
 
-    let fecha = if let Some(fecha_str) = &args.fecha {
-        parse_datetime(fecha_str)?
-    } else {
-        Utc::now()
-    };
+    // La fecha ya no se usa en CreateTransaccion, se asigna automáticamente en el modelo
 
     let create_data = CreateTransaccion {
         retiro_id,
@@ -158,7 +136,6 @@ async fn crear_transaccion(repo: TransaccionRepository, args: CrearTransaccionAr
         tipo: args.tipo.into(),
         monto: args.monto,
         descripcion: args.descripcion.clone(),
-        fecha,
     };
 
     // Validar datos antes de crear
@@ -185,7 +162,7 @@ async fn crear_transaccion(repo: TransaccionRepository, args: CrearTransaccionAr
             println!(
                 "   Fecha: {}",
                 transaccion
-                    .fecha
+                    .created_at
                     .format("%Y-%m-%d %H:%M")
                     .to_string()
                     .bright_cyan()
@@ -276,7 +253,7 @@ async fn listar_transacciones(
             format!("€{:.2}", transaccion.monto).bright_green(),
             descripcion_truncated.bright_white(),
             transaccion
-                .fecha
+                .created_at
                 .format("%Y-%m-%d")
                 .to_string()
                 .bright_cyan(),
@@ -332,7 +309,7 @@ async fn mostrar_transaccion(
             println!(
                 "   Fecha: {}",
                 transaccion
-                    .fecha
+                    .created_at
                     .format("%Y-%m-%d %H:%M:%S UTC")
                     .to_string()
                     .bright_cyan()
@@ -440,7 +417,7 @@ async fn calcular_balance(repo: TransaccionRepository, args: BalanceArgs) -> Res
     let retiro_id = Uuid::parse_str(&args.retiro_id)
         .map_err(|_| AppError::Validation("ID de retiro inválido".to_string()))?;
 
-    match repo.calculate_balance(retiro_id).await {
+    match repo.calculate_balance(retiro_id, None).await {
         Ok(balance) => {
             println!("{}", "✅ Balance calculado!".green().bold());
             println!();

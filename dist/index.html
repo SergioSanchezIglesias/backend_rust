@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión Financiera - Retiros</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1>💰 Gestión Financiera</h1>
+                <p>Sistema de Retiros</p>
+            </div>
+            
+            <ul class="nav-menu">
+                <li>
+                    <button class="nav-button active" data-section="dashboard">
+                        📊 Dashboard
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-button" data-section="retiros">
+                        🏕️ Retiros
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-button" data-section="categorias">
+                        🏷️ Categorías
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-button" data-section="transacciones">
+                        💳 Transacciones
+                    </button>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section active">
+                <div class="section-header">
+                    <h2>Dashboard</h2>
+                    <p>Resumen general del sistema</p>
+                </div>
+                
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <h3>Retiro Activo</h3>
+                        <div id="retiro-activo">
+                            <p class="loading">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Balance Actual</h3>
+                        <div id="balance-actual">
+                            <p class="loading">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Total Transacciones</h3>
+                        <div id="total-transacciones">
+                            <p class="loading">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Resumen de Retiros</h3>
+                        <div id="resumen-retiros">
+                            <p class="loading">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-section">
+                    <h3>Acciones Rápidas</h3>
+                    <div class="quick-actions">
+                        <button class="btn btn-primary" onclick="showCreateRetiroModal()">
+                            🏕️ Nuevo Retiro
+                        </button>
+                        <button class="btn btn-success" onclick="showCreateTransaccionModal()" id="quick-transaccion-btn">
+                            💳 Nueva Transacción
+                        </button>
+                        <button class="btn btn-secondary" onclick="showCreateCategoriaModal()">
+                            🏷️ Nueva Categoría
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Retiros Section -->
+            <section id="retiros" class="content-section">
+                <div class="section-header">
+                    <h2>Gestión de Retiros</h2>
+                    <button class="btn btn-primary" onclick="showCreateRetiroModal()">
+                        ➕ Nuevo Retiro
+                    </button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="retiros-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Fechas</th>
+                                <th>Participantes</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="loading">Cargando retiros...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Categorías Section -->
+            <section id="categorias" class="content-section">
+                <div class="section-header">
+                    <h2>Gestión de Categorías</h2>
+                    <button class="btn btn-primary" onclick="showCreateCategoriaModal()">
+                        ➕ Nueva Categoría
+                    </button>
+                </div>
+                
+                <div class="filter-bar">
+                    <label>
+                        Filtrar por tipo:
+                        <select id="categoria-filter">
+                            <option value="">Todas</option>
+                            <option value="Ingreso">Ingresos</option>
+                            <option value="Gasto">Gastos</option>
+                        </select>
+                    </label>
+                </div>
+                
+                <div class="table-container">
+                    <table id="categorias-table">
+                        <thead>
+                            <tr>
+                                <th>Color</th>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" class="loading">Cargando categorías...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Transacciones Section -->
+            <section id="transacciones" class="content-section">
+                <div class="section-header">
+                    <h2>Gestión de Transacciones</h2>
+                    <button class="btn btn-primary" onclick="showCreateTransaccionModal()">
+                        ➕ Nueva Transacción
+                    </button>
+                </div>
+                
+                <div class="filter-bar">
+                    <label>
+                        <strong>Retiro Seleccionado:</strong>
+                        <select id="transaccion-retiro-filter">
+                            <option value="">⚠️ Seleccionar retiro para ver/crear transacciones...</option>
+                        </select>
+                    </label>
+                    <div id="retiro-info" class="retiro-info" style="display: none;">
+                        <span class="retiro-badge"></span>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table id="transacciones-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Descripción</th>
+                                <th>Categoría</th>
+                                <th>Tipo</th>
+                                <th>Monto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="loading">Selecciona un retiro para ver las transacciones...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="modal-content" class="modal-content">
+            <!-- Modal content will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

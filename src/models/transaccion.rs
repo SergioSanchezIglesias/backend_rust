@@ -25,7 +25,6 @@ pub struct Transaccion {
     #[validate(length(min = 1, max = 300))]
     pub descripcion: String,
 
-    pub fecha: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -42,8 +41,6 @@ pub struct CreateTransaccion {
 
     #[validate(length(min = 1, max = 300))]
     pub descripcion: String,
-
-    pub fecha: DateTime<Utc>,
 }
 
 impl Transaccion {
@@ -56,7 +53,6 @@ impl Transaccion {
             tipo: data.tipo,
             monto: data.monto,
             descripcion: data.descripcion,
-            fecha: data.fecha,
             created_at: now,
             updated_at: now,
         }

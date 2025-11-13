@@ -13,6 +13,9 @@ pub enum AppError {
 
     #[error("Internal error: {0}")]
     Internal(String),
+
+    #[error("Desktop app error: {0}")]
+    Desktop(String),
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;

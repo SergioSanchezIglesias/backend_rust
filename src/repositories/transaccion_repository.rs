@@ -50,14 +50,13 @@ impl TransaccionRepository {
         let retiro_id_str = transaccion.retiro_id.to_string();
         let categoria_id_str = transaccion.categoria_id.to_string();
         let tipo_str = transaccion.tipo.to_string();
-        let fecha_str = transaccion.fecha.to_rfc3339();
         let created_at_str = transaccion.created_at.to_rfc3339();
         let updated_at_str = transaccion.updated_at.to_rfc3339();
 
         sqlx::query!(
             r#"
-            INSERT INTO transacciones (id, retiro_id, categoria_id, tipo, monto, descripcion, fecha, created_at, updated_at)
-            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+            INSERT INTO transacciones (id, retiro_id, categoria_id, tipo, monto, descripcion, created_at, updated_at)
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
             "#,
             id_str,
             retiro_id_str,
@@ -65,7 +64,6 @@ impl TransaccionRepository {
             tipo_str,
             transaccion.monto,
             transaccion.descripcion,
-            fecha_str,
             created_at_str,
             updated_at_str
         )
@@ -79,7 +77,7 @@ impl TransaccionRepository {
     pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Transaccion>> {
         let id_str = id.to_string();
         let row = sqlx::query!(
-            "SELECT id, retiro_id, categoria_id, tipo, monto, descripcion, fecha, created_at, updated_at FROM transacciones WHERE id = ?1",
+            "SELECT id, retiro_id, categoria_id, tipo, monto, descripcion, created_at, updated_at FROM transacciones WHERE id = ?1",
             id_str
         )
         .fetch_optional(&self.pool)
@@ -103,7 +101,6 @@ impl TransaccionRepository {
                     },
                     monto: row.monto,
                     descripcion: row.descripcion,
-                    fecha: parse_flexible_datetime(&row.fecha)?,
                     created_at: parse_flexible_datetime(&row.created_at)?,
                     updated_at: parse_flexible_datetime(&row.updated_at)?,
                 };
@@ -117,7 +114,7 @@ impl TransaccionRepository {
     pub async fn get_by_retiro(&self, retiro_id: Uuid) -> Result<Vec<Transaccion>> {
         let retiro_id_str = retiro_id.to_string();
         let rows = sqlx::query!(
-            "SELECT id, retiro_id, categoria_id, tipo, monto, descripcion, fecha, created_at, updated_at FROM transacciones WHERE retiro_id = ?1 ORDER BY fecha DESC",
+            "SELECT id, retiro_id, categoria_id, tipo, monto, descripcion, created_at, updated_at FROM transacciones WHERE retiro_id = ?1 ORDER BY created_at DESC",
             retiro_id_str
         )
         .fetch_all(&self.pool)
@@ -139,7 +136,6 @@ impl TransaccionRepository {
                 },
                 monto: row.monto,
                 descripcion: row.descripcion,
-                fecha: parse_flexible_datetime(&row.fecha)?,
                 created_at: parse_flexible_datetime(&row.created_at)?,
                 updated_at: parse_flexible_datetime(&row.updated_at)?,
             };
@@ -158,11 +154,31 @@ impl TransaccionRepository {
         Ok(result.rows_affected() > 0)
     }
 
-    /// Calcular balance total de un retiro
-    pub async fn calculate_balance(&self, retiro_id: Uuid) -> Result<f64> {
+    /// Calcular balance por tipo de transacción (opcional)
+    pub async fn calculate_balance(&self, retiro_id: Uuid, tipo: Option<TipoTransaccion>) -> Result<f64> {
         let retiro_id_str = retiro_id.to_string();
 
-        // Obtener suma de ingresos
+        match tipo {
+            Some(TipoTransaccion::Ingreso) => {
+                let row = sqlx::query!(
+                    "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE retiro_id = ?1 AND tipo = 'Ingreso'",
+                    retiro_id_str
+                )
+                .fetch_one(&self.pool)
+                .await?;
+                Ok(row.total as f64)
+            },
+            Some(TipoTransaccion::Gasto) => {
+                let row = sqlx::query!(
+                    "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE retiro_id = ?1 AND tipo = 'Gasto'",
+                    retiro_id_str
+                )
+                .fetch_one(&self.pool)
+                .await?;
+                Ok(row.total as f64)
+            },
+            None => {
+                // Calcular balance total (ingresos - gastos)
         let ingresos_row = sqlx::query!(
             "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE retiro_id = ?1 AND tipo = 'Ingreso'",
             retiro_id_str
@@ -170,18 +186,29 @@ impl TransaccionRepository {
         .fetch_one(&self.pool)
         .await?;
 
-        // Obtener suma de gastos
         let gastos_row = sqlx::query!(
             "SELECT COALESCE(SUM(monto), 0) as total FROM transacciones WHERE retiro_id = ?1 AND tipo = 'Gasto'",
+                    retiro_id_str
+                )
+                .fetch_one(&self.pool)
+                .await?;
+
+                Ok((ingresos_row.total - gastos_row.total) as f64)
+            }
+        }
+    }
+
+    /// Contar transacciones por retiro
+    pub async fn count_by_retiro(&self, retiro_id: Uuid) -> Result<i64> {
+        let retiro_id_str = retiro_id.to_string();
+        let row = sqlx::query!(
+            "SELECT COUNT(*) as count FROM transacciones WHERE retiro_id = ?1",
             retiro_id_str
         )
         .fetch_one(&self.pool)
         .await?;
 
-        let total_ingresos = ingresos_row.total;
-        let total_gastos = gastos_row.total;
-
-        Ok((total_ingresos - total_gastos) as f64)
+        Ok(row.count as i64)
     }
 }
 
