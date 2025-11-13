@@ -11,8 +11,20 @@ use uuid::Uuid;
 
 #[cfg(feature = "desktop")]
 async fn get_database_pool() -> Result<sqlx::SqlitePool, String> {
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite:retiros.db".to_string());
+    // Intentar usar la variable de entorno primero, sino buscar en el directorio de la app
+    let database_url = if let Ok(url) = std::env::var("DATABASE_URL") {
+        url
+    } else {
+        // Buscar en el directorio de recursos del bundle macOS
+        let db_path = std::env::current_exe()
+            .ok()
+            .and_then(|exe| exe.parent().map(|p| p.join("../Resources/retiros.db")))
+            .and_then(|p| p.canonicalize().ok())
+            .and_then(|p| p.to_str().map(String::from))
+            .unwrap_or_else(|| "./retiros.db".to_string());
+        
+        format!("sqlite:{}", db_path)
+    };
     
     let db = Database::new(&database_url).await
         .map_err(|e| format!("Error conectando a la base de datos: {}", e))?;

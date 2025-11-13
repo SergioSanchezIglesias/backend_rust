@@ -6,6 +6,7 @@ edition = "2021"
 [features]
 default = []
 desktop = ["tauri"]
+custom-protocol = ["tauri/custom-protocol"]
 
 [dependencies]
 # Core async runtime
@@ -41,7 +42,7 @@ clap = { version = "4.0", features = ["derive"] }
 colored = "2.0"
 
 # Desktop App (Tauri)
-tauri = { version = "1.0", features = ["shell-open"], optional = true }
+tauri = { version = "1.0", features = ["shell-open", "custom-protocol"], optional = true }
 
 [build-dependencies]
 tauri-build = { version = "1.0", features = [] }

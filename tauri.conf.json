@@ -7,7 +7,7 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "Gestión Financiera",
+    "productName": "Gestión Samuel",
     "version": "0.1.0"
   },
   "tauri": {
@@ -26,8 +26,10 @@
         "depends": []
       },
       "externalBin": [],
-      "icon": [],
-      "identifier": "com.retiros.gestion-financiera",
+      "icon": [
+        "icons/icon.png"
+      ],
+      "identifier": "com.retiros.gestion-samuel",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -36,7 +38,9 @@
         "providerShortName": null,
         "signingIdentity": null
       },
-      "resources": [],
+      "resources": [
+        "retiros.db"
+      ],
       "shortDescription": "",
       "targets": "all",
       "windows": {
@@ -56,7 +60,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Gestión Financiera - Retiros",
+        "title": "Gestión Samuel",
         "width": 1200,
         "minWidth": 800,
         "minHeight": 600
